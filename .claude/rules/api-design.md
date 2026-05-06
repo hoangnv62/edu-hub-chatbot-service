@@ -21,46 +21,63 @@ globs: ["src/routes/**/*.ts", "src/controllers/**/*.ts"]
 | Cập nhật một phần | PATCH  | 200     | 400, 404      |
 | Xóa               | DELETE | 204     | 404           |
 
-## Response Format — 4 kiểu
+## Response Helpers — `src/utils/responseHandler.ts`
 
-### 1. Lỗi
+Luôn dùng helper thay vì gọi `res.status().json()` thủ công:
+
+```ts
+import { Success } from '@/utils/responseHandler.js';
+
+return Success(res, data);   // 200
+```
+
+Dùng `return` để dừng hàm ngay tại đó, tránh gửi response 2 lần:
+```ts
+if (!items.length) return Success(res, []);
+const result = await this.service.process(items);
+return Success(res, result);
+```
+
+## Error Handling
+
+Throw exception — KHÔNG gọi `res.status()` thủ công cho lỗi:
+
+```ts
+import { NotFoundException, BadRequestException } from '@/utils/errors.js';
+
+// ĐÚNG
+throw new NotFoundException('User 42 not found');
+
+// SAI
+res.status(404).json({ error: 'NOT_FOUND', errorDescription: '...' });
+```
+
+`errorHandlerMiddleware` tự động bắt và trả đúng format:
 ```json
 { "error": "NOT_FOUND", "errorDescription": "User 42 not found" }
 ```
-```ts
-res.status(404).json({ error: 'NOT_FOUND', errorDescription: 'User 42 not found' });
+
+## Response Format — 4 kiểu
+
+### 1. Lỗi (xử lý bởi errorHandlerMiddleware)
+```json
+{ "error": "NOT_FOUND", "errorDescription": "User 42 not found" }
 ```
 
-### 2. Trả về một object (payload trực tiếp)
-```json
-{ "id": 1, "name": "Alice", "email": "alice@example.com" }
-```
+### 2. Trả về một object
 ```ts
-res.status(200).json(userDto);        // GET, PUT, PATCH
-res.status(201).json(createdDto);     // POST
+return Success(res, userDto);        // GET, PUT, PATCH → 200
+res.status(201).json(createdDto);    // POST → 201 (chưa có Created helper)
 ```
 
 ### 3. Trả về danh sách (array trực tiếp)
-```json
-[{ "id": 1, "name": "Alice" }, { "id": 2, "name": "Bob" }]
-```
 ```ts
-res.status(200).json(items);
+return Success(res, items);
 ```
-Dùng khi list nhỏ, không cần phân trang (dropdown, lookup).
 
 ### 4. Trả về danh sách có phân trang
-```json
-{
-  "data": [{ "id": 1, "name": "Alice" }],
-  "pageNumber": 1,
-  "pageSize": 10,
-  "totalPage": 5,
-  "totalElement": 48
-}
-```
 ```ts
-res.status(200).json({
+return Success(res, {
   data:         items,
   pageNumber:   page,
   pageSize:     limit,
@@ -69,14 +86,9 @@ res.status(200).json({
 });
 ```
 
-## TypeScript Types
+## TypeScript Types — `src/types/`
 ```ts
 // src/types/response.ts
-export interface ErrorResponse {
-  error: string;
-  errorDescription: string;
-}
-
 export interface PagedResponse<T> {
   data: T[];
   pageNumber: number;

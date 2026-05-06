@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import type { JwtPayload } from '../types/auth.js';
 import { TokenExpiredException, UnauthorizedException } from '../utils/errors.js';
 
-export const authenticate = (req: Request, _res: Response, next: NextFunction): void => {
+export const jwtAuthenticateSDK = (req: Request, _res: Response, next: NextFunction): void => {
   const authHeader = req.headers['authorization'];
 
   if (!authHeader?.startsWith('Bearer ')) {

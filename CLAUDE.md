@@ -5,7 +5,7 @@
 - **Framework:** Express.js 5.x
 - **Language:** TypeScript 5.x
 - **Database:** MariaDB — driver `mysql2/promise` (không dùng ORM)
-- **Auth:** JWT (jsonwebtoken) + bcryptjs
+- **Auth:** JWT (jsonwebtoken) — HS512, bcryptjs
 - **Validation:** Zod
 - **Testing:** Jest + Supertest
 - **Logging:** Winston
@@ -26,7 +26,7 @@ src/
   middlewares/          # auth, validate, errorHandlerMiddleware, ...
   schemas/              # Zod schemas (validation)
   types/                # TypeScript types & interfaces
-  utils/                # asyncHandler, errors, ...
+  utils/                # asyncHandler, errors, responseHandler, ...
   config/               # Env config, constants
 tests/
   unit/                 # Jest unit tests (mock pool)
@@ -42,6 +42,54 @@ npm test                # Chạy toàn bộ test
 npm run test:watch      # Watch mode
 npm run lint            # ESLint
 npm run lint:fix        # Auto-fix lint errors
+```
+
+## Response Helpers — `src/utils/responseHandler.ts`
+
+```ts
+import { Success } from '@/utils/responseHandler.js';
+
+// Trong controller — luôn dùng return để dừng hàm
+return Success(res, data);   // 200 + JSON payload
+```
+
+## Error Handling — `src/utils/errors.ts`
+
+Throw exception thay vì gọi `res.status()` thủ công:
+
+```ts
+import { NotFoundException, BadRequestException } from '@/utils/errors.js';
+
+throw new NotFoundException('User 42 not found');
+// → 404  { "error": "NOT_FOUND", "errorDescription": "User 42 not found" }
+```
+
+### Exception classes có sẵn
+| Class | Status | `error` code tự sinh |
+|---|---|---|
+| `NotFoundException` | 404 | `NOT_FOUND` |
+| `BadRequestException` | 400 | `BAD_REQUEST` |
+| `UnauthorizedException` | 401 | `UNAUTHORIZED` |
+| `TokenExpiredException` | 401 | `TOKEN_EXPIRED` |
+| `ForbiddenException` | 403 | `FORBIDDEN` |
+| `ConflictException` | 409 | `CONFLICT` |
+| `InternalServerErrorException` | 500 | `INTERNAL_SERVER_ERROR` |
+
+`errorHandlerMiddleware` bắt tất cả các lỗi trên và trả đúng format.
+
+## Request Types — `src/types/*.types.ts`
+
+Gom Params/Body/Query vào 1 file, export type alias `*Request`:
+
+```ts
+// src/types/chat.types.ts
+import type { Request } from 'express';
+
+export interface ChatParams { chatId: string }
+export interface ChatBody   { content: string }
+export interface ChatQuery  { page?: string }
+
+export type ChatRequest = Request<ChatParams, {}, ChatBody, ChatQuery>;
 ```
 
 ## Database — mysql2 với hai kiểu placeholder
@@ -152,7 +200,7 @@ try {
 ## Conventions bắt buộc
 
 ### Đặt tên
-- File: `snake_case.folder_parent.ts` — `user.service.ts`, `auth.middleware.ts`
+- File: `camelCase.folder_parent.ts` — `user.service.ts`, `auth.middleware.ts`
 - Class: `PascalCase` — `UserRepository`
 - Interface/Type: `PascalCase` — `UserRow`, `PagedResponse<T>`
 - Constant: `UPPER_SNAKE_CASE` — `JWT_EXPIRES_IN`

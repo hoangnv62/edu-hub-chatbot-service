@@ -82,7 +82,7 @@ try {
 ## Map snake_case → camelCase trong repository
 
 ```ts
-// Không để snake_case leak ra ngoài repository
+// Không để snake_case leak ra ngoài repositories
 function toUserDto(row: RowDataPacket): UserDto {
   return {
     id:        row.id,
