@@ -1,0 +1,45 @@
+{
+  "$schema": "https://claude.ai/schema/settings.json",
+
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx ts-node *)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(node *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | sh)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(**/secrets/**)"
+    ]
+  },
+
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_FILE_PATHS\" | grep -q '\\.ts$'; then npm run lint --silent 2>&1 | head -20 || true; fi"
+          }
+        ]
+      }
+    ]
+  },
+
+  "attribution": {
+    "commits": true,
+    "pullRequests": false
+  },
+
+  "spinnerTipsEnabled": false
+}
